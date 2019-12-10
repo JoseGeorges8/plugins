@@ -132,14 +132,19 @@ final class MethodCallHandlerImpl implements MethodChannel.MethodCallHandler {
           result.success(null);
           break;
         }
-      case "setFlash":
-      {
-        camera.setFlash(result, call.argument("mode"));
-        break;
-      }
       case "hasFlash":
       {
         result.success(hasFlash());
+        break;
+      }
+      case "turnFlashOn":
+      {
+        camera.turnFlashOn(result);
+        break;
+      }
+      case "turnFlashOff":
+      {
+        camera.turnFlashOff(result);
         break;
       }
       default:
