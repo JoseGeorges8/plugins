@@ -669,6 +669,32 @@ FourCharCode const videoFormat = kCVPixelFormatType_32BGRA;
   }
 }
 
+- (bool)hasFlash {
+  AVCaptureDevice *device = [AVCaptureDevice defaultDeviceWithMediaType:AVMediaTypeVideo];
+  return ([device hasFlash] && [device hasFlash]);
+}
+
+- (void)setFlashMode:(BOOL)enable {
+  [self setFlashMode:enable level:1.0];
+}
+
+- (void)setFlashMode:(BOOL)enable level:(float)level {
+  AVCaptureDevice *device = [AVCaptureDevice defaultDeviceWithMediaType:AVMediaTypeVideo];
+  if ([device hasFlash] && [device hasFlash]) {
+    [device lockForConfiguration:nil];
+    if (enable) {
+      NSError *error = nil;
+      float acceptedLevel =
+          (level < AVCaptureMaxAvailableTorchLevel ? level : AVCaptureMaxAvailableTorchLevel);
+      NSLog(@"FLash level: %f", acceptedLevel);
+      [device setTorchModeOnWithLevel:acceptedLevel error:&error];
+    } else {
+      [device setTorchMode:AVCaptureFlashModeOff];
+    }
+    [device unlockForConfiguration];
+  }
+}
+
 - (BOOL)setupWriterForPath:(NSString *)path {
   NSError *error = nil;
   NSURL *outputURL;
@@ -832,10 +858,12 @@ FourCharCode const videoFormat = kCVPixelFormatType_32BGRA;
     NSString *cameraName = call.arguments[@"cameraName"];
     NSString *resolutionPreset = call.arguments[@"resolutionPreset"];
     NSNumber *enableAudio = call.arguments[@"enableAudio"];
+    NSNumber *enableFlash = call.arguments[@"enableFlash"];
     NSError *error;
     FLTCam *cam = [[FLTCam alloc] initWithCameraName:cameraName
                                     resolutionPreset:resolutionPreset
                                          enableAudio:[enableAudio boolValue]
+                                          enableFlash:[enableFlash boolValue]
                                        dispatchQueue:_dispatchQueue
                                                error:&error];
     if (error) {
@@ -870,6 +898,15 @@ FourCharCode const videoFormat = kCVPixelFormatType_32BGRA;
     result(nil);
   } else if ([@"stopImageStream" isEqualToString:call.method]) {
     [_camera stopImageStream];
+    result(nil);
+  } else if ([@"hasFlash" isEqualToString:call.method]) {
+    result([NSNumber numberWithBool:[_camera hasFlash]]);
+  } else if ([@"flashOn" isEqualToString:call.method]) {
+    NSNumber *level = call.arguments[@"level"];
+    [_camera setFlashMode:true level:[level floatValue]];
+    result(nil);
+  } else if ([@"flashOff" isEqualToString:call.method]) {
+    [_camera setFlashMode:false];
     result(nil);
   } else if ([@"pauseVideoRecording" isEqualToString:call.method]) {
     [_camera pauseVideoRecording];
