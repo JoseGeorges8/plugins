@@ -162,6 +162,8 @@ static ResolutionPreset getResolutionPresetForString(NSString *preset) {
 @property(readonly, nonatomic) int64_t textureId;
 @property(nonatomic, copy) void (^onFrameAvailable)();
 @property BOOL enableAudio;
+@property BOOL enableFlash;
+@property BOOL enableAutoExposure;
 @property(nonatomic) FlutterEventChannel *eventChannel;
 @property(nonatomic) FLTImageStreamHandler *imageStreamHandler;
 @property(nonatomic) FlutterEventSink eventSink;
@@ -195,6 +197,8 @@ static ResolutionPreset getResolutionPresetForString(NSString *preset) {
 - (instancetype)initWithCameraName:(NSString *)cameraName
                   resolutionPreset:(NSString *)resolutionPreset
                        enableAudio:(BOOL)enableAudio
+                       enableFlash:(BOOL)enableFlash
+                enableAutoExposure:(BOOL)enableAutoExposure
                      dispatchQueue:(dispatch_queue_t)dispatchQueue
                              error:(NSError **)error;
 
@@ -205,6 +209,9 @@ static ResolutionPreset getResolutionPresetForString(NSString *preset) {
 - (void)startImageStreamWithMessenger:(NSObject<FlutterBinaryMessenger> *)messenger;
 - (void)stopImageStream;
 - (void)captureToFile:(NSString *)filename result:(FlutterResult)result;
+- (void)setFlashMode:(BOOL)enable level:(float)level;
+- (void)setFlashMode:(BOOL)enable;
+- (void)setAutoExposureMode:(BOOL)enable;
 @end
 
 @implementation FLTCam {
@@ -216,6 +223,8 @@ FourCharCode const videoFormat = kCVPixelFormatType_32BGRA;
 - (instancetype)initWithCameraName:(NSString *)cameraName
                   resolutionPreset:(NSString *)resolutionPreset
                        enableAudio:(BOOL)enableAudio
+                       enableFlash:(BOOL)enableFlash
+                enableAutoExposure:(BOOL)enableAutoExposure
                      dispatchQueue:(dispatch_queue_t)dispatchQueue
                              error:(NSError **)error {
   self = [super init];
@@ -261,6 +270,15 @@ FourCharCode const videoFormat = kCVPixelFormatType_32BGRA;
   [_motionManager startAccelerometerUpdates];
 
   [self setCaptureSessionPreset:_resolutionPreset];
+
+  if (enableFlash) {
+    [self setFlashMode:enableFlash];
+  }
+
+  if (enableAutoExposure) {
+    [self setAutoExposureMode:enableAutoExposure];
+  }
+
   return self;
 }
 
@@ -695,6 +713,18 @@ FourCharCode const videoFormat = kCVPixelFormatType_32BGRA;
   }
 }
 
+- (void)setAutoExposureMode:(BOOL)enable {
+  AVCaptureDevice *device = [AVCaptureDevice defaultDeviceWithMediaType:AVMediaTypeVideo];
+  [device lockForConfiguration:nil];
+  if (enable) {
+    int exposure = AVCaptureExposureModeContinuousAutoExposure;
+    if (exposure && [device isExposureModeSupported:exposure]) device.exposureMode = exposure;
+  } else {
+    device.exposureMode = AVCaptureExposureModeAutoExpose;
+  }
+  [device unlockForConfiguration];
+}
+
 - (BOOL)setupWriterForPath:(NSString *)path {
   NSError *error = nil;
   NSURL *outputURL;
@@ -859,11 +889,13 @@ FourCharCode const videoFormat = kCVPixelFormatType_32BGRA;
     NSString *resolutionPreset = call.arguments[@"resolutionPreset"];
     NSNumber *enableAudio = call.arguments[@"enableAudio"];
     NSNumber *enableFlash = call.arguments[@"enableFlash"];
+    NSNumber *enableAutoExposure = call.arguments[@"enableAutoExposure"];
     NSError *error;
     FLTCam *cam = [[FLTCam alloc] initWithCameraName:cameraName
                                     resolutionPreset:resolutionPreset
                                          enableAudio:[enableAudio boolValue]
-                                          enableFlash:[enableFlash boolValue]
+                                         enableFlash:[enableFlash boolValue]
+                                  enableAutoExposure:[enableAutoExposure boolValue]
                                        dispatchQueue:_dispatchQueue
                                                error:&error];
     if (error) {
@@ -908,6 +940,11 @@ FourCharCode const videoFormat = kCVPixelFormatType_32BGRA;
   } else if ([@"flashOff" isEqualToString:call.method]) {
     [_camera setFlashMode:false];
     result(nil);
+  } else if ([@"autoExposureOn" isEqualToString:call.method]) {
+    [_camera setAutoExposureMode:true];
+    result(nil);
+  } else if ([@"autoExposureOff" isEqualToString:call.method]) {
+    [_camera setAutoExposureMode:false];
   } else if ([@"pauseVideoRecording" isEqualToString:call.method]) {
     [_camera pauseVideoRecording];
     result(nil);
