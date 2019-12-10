@@ -933,13 +933,12 @@ FourCharCode const videoFormat = kCVPixelFormatType_32BGRA;
     result(nil);
   } else if ([@"hasFlash" isEqualToString:call.method]) {
     result([NSNumber numberWithBool:[_camera hasFlash]]);
-  } else if ([@"flashOn" isEqualToString:call.method]) {
-    NSNumber *level = call.arguments[@"level"];
-    [_camera setFlashMode:true level:[level floatValue]];
-    result(nil);
-  } else if ([@"flashOff" isEqualToString:call.method]) {
-    [_camera setFlashMode:false];
-    result(nil);
+  }else if ([@"turnFlashOn" isEqualToString:call.method]) {
+      [_camera setFlashMode:true];
+      result(nil);
+  }else if ([@"turnFlashOff" isEqualToString:call.method]) {
+      [_camera setFlashMode:false];
+      result(nil);
   } else if ([@"autoExposureOn" isEqualToString:call.method]) {
     [_camera setAutoExposureMode:true];
     result(nil);

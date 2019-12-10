@@ -490,7 +490,16 @@ public class Camera {
         null);
   }
 
-  public void setFlash(@NonNull final Result result, int mode) {
+  public  void turnFlashOn(@NonNull final Result result){
+    setFlash(result, 3);
+  }
+
+  public  void turnFlashOff(@NonNull final Result result){
+    setFlash(result, 0);
+
+  }
+
+  private void setFlash(@NonNull final Result result, int mode) {
     try {
       // Force turning off the torch to avoid keeping the
       // light on when another flash mode is selected

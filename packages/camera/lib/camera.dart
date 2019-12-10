@@ -589,19 +589,33 @@ class CameraController extends ValueNotifier<CameraValue> {
     }
   }
 
-  /// Set the Flash light [mode]
+  /// Turn flash light off
   /// See [FlashMode] enum for available options
-  Future<void> setFlash({FlashMode mode = FlashMode.off}) async {
+  Future<void> turnFlashOff() async {
     if (!value.isInitialized || _isDisposed) {
       throw CameraException(
         'Uninitialized CameraController.',
         'flashMode was called on uninitialized CameraController',
       );
     }
-
     try {
-      await _channel.invokeMethod<void>(
-          'setFlash', <String, dynamic>{'mode': mode.index});
+      await _channel.invokeMethod<void>('turnFlashOff');
+    } on PlatformException catch (e) {
+      throw CameraException(e.code, e.message);
+    }
+  }
+
+  /// Turn flash light on
+  /// See [FlashMode] enum for available options
+  Future<void> turnFlashOn() async {
+    if (!value.isInitialized || _isDisposed) {
+      throw CameraException(
+        'Uninitialized CameraController.',
+        'flashMode was called on uninitialized CameraController',
+      );
+    }
+    try {
+      await _channel.invokeMethod<void>('turnFlashOn');
     } on PlatformException catch (e) {
       throw CameraException(e.code, e.message);
     }
